@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -e
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PORT=8089
+
+echo "========================================================"
+echo "    GerMed — On-Device Clinical Skin Health Platform"
+echo "               Developed by Germaz Studio"
+echo "========================================================"
+
+# Launch embedded local web engine in background if not already active
+if ! curl -s -I "http://localhost:${PORT}" >/dev/null 2>&1; then
+    echo "[*] Starting local ONNX inference engine (GerMed-Mobile INT8)..."
+    python3 "${DIR}/server.py" &
+    SERVER_PID=$!
+    trap "kill $SERVER_PID 2>/dev/null || true" EXIT
+    sleep 1.5
+fi
+
+# Open in desktop browser or native app window
+URL="http://localhost:${PORT}"
+echo "[*] Opening GerMed UI at ${URL}"
+
+if command -v brave >/dev/null 2>&1; then
+    brave --app="${URL}" >/dev/null 2>&1 &
+elif command -v google-chrome >/dev/null 2>&1; then
+    google-chrome --app="${URL}" >/dev/null 2>&1 &
+elif command -v chromium >/dev/null 2>&1; then
+    chromium --app="${URL}" >/dev/null 2>&1 &
+elif command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "${URL}" >/dev/null 2>&1 &
+else
+    echo "Please open ${URL} in your web browser."
+fi
+
+echo "[+] GerMed is running. Press Ctrl+C to terminate."
+wait

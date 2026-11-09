@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>GerMed</title>
+  <style>
+    :root {
+      --bg: #F8FAF9;
+      --surface: #FFFFFF;
+      --primary: #19432B;
+      --primary-hover: #133320;
+      --accent: #27AE60;
+      --text: #111827;
+      --text-secondary: #6B7280;
+      --border: #E5E7EB;
+      --border-dashed: #82A390;
+      --radius-sm: 12px;
+      --radius-md: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--surface);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .screens-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--surface);
+      overflow-y: auto;
+      padding: 16px 20px 24px;
+      display: none;
+      flex-direction: column;
+      -webkit-overflow-scrolling: touch;
+    }
+    .screen.active {
+      display: flex;
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 22px;
+    }
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 21px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+    .logo-badge {
+      width: 32px;
+      height: 32px;
+      background: #E8F5E9;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #2E7D32;
+    }
+    .nav-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #374151;
+      border-radius: 50%;
+    }
+    .nav-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #111;
+      flex: 1;
+      text-align: center;
+    }
+
+    h1.hero-title {
+      font-size: 32px;
+      line-height: 1.15;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #0F172A;
+      margin-bottom: 12px;
+    }
+    p.hero-subtitle {
+      font-size: 15px;
+      line-height: 1.45;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+
+    .upload-card {
+      border: 2px dashed var(--border-dashed);
+      background: #FAFCFA;
+      border-radius: var(--radius-md);
+      padding: 34px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    .upload-icon-circle {
+      width: 58px;
+      height: 58px;
+      background: #E8F5E9;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+      color: var(--primary);
+    }
+    .upload-label {
+      font-size: 14.5px;
+      font-weight: 600;
+      color: #2E5A40;
+    }
+
+    .btn {
+      width: 100%;
+      height: 52px;
+      border-radius: var(--radius-sm);
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: #FFFFFF;
+    }
+    .btn-secondary {
+      background: #F3F4F6;
+      color: #1F2937;
+      margin-top: 10px;
+      border: 1px solid #E5E7EB;
+    }
+
+    .history-section {
+      margin-top: 26px;
+      flex: 1;
+    }
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .history-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #111;
+    }
+    .history-empty {
+      padding: 24px 16px;
+      text-align: center;
+      color: #9CA3AF;
+      font-size: 13.5px;
+      background: #F9FAFB;
+      border-radius: 14px;
+      border: 1px dashed #E5E7EB;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 0;
+      border-bottom: 1px solid #F3F4F6;
+      cursor: pointer;
+    }
+    .history-thumb {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      object-fit: cover;
+      background: #E5E7EB;
+    }
+    .history-info {
+      flex: 1;
+    }
+    .history-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #111;
+    }
+    .history-risk {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+    .history-date {
+      font-size: 12px;
+      color: #9CA3AF;
+    }
+
+    .disclaimer-card {
+      margin-top: auto;
+      padding-top: 18px;
+      display: flex;
+      gap: 10px;
+      font-size: 11.5px;
+      line-height: 1.45;
+      color: #8C96A5;
+    }
+
+    /* Result screen */
+    .result-image-box {
+      width: 100%;
+      height: 220px;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin-bottom: 20px;
+      background: #000;
+    }
+    .result-image-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .risk-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 4px;
+    }
+    .risk-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #4B5563;
+    }
+    .risk-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+    .risk-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .risk-percentage {
+      font-size: 42px;
+      font-weight: 800;
+      color: #111827;
+      letter-spacing: -1px;
+      margin-bottom: 10px;
+    }
+    .progress-bar-bg {
+      width: 100%;
+      height: 10px;
+      background: #EAEAEA;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: #4CAF50;
+      border-radius: 6px;
+      transition: width 0.6s ease-out;
+    }
+    .result-summary-text {
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: #4B5563;
+      margin-bottom: 22px;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #111827;
+      margin-bottom: 8px;
+    }
+    .what-this-means-text {
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: #4B5563;
+      margin-bottom: 16px;
+    }
+
+    .thinking-card {
+      background: #F8FAF9;
+      border: 1px solid #E2E8F0;
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      margin-bottom: 16px;
+    }
+    .thinking-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #2C3E50;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .thinking-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .thinking-item {
+      font-size: 12px;
+      color: #4A5568;
+    }
+    .thinking-item span {
+      font-weight: 700;
+      color: #1A202C;
+    }
+
+    .recommendation-box {
+      background: #EFF8F2;
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .recommendation-icon {
+      color: #2E7D32;
+      margin-top: 2px;
+    }
+    .recommendation-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1B4D2E;
+      margin-bottom: 4px;
+    }
+    .recommendation-desc {
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: #2D583E;
+    }
+
+    /* About Screen */
+    .info-list {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      margin-top: 14px;
+      margin-bottom: auto;
+    }
+    .info-item {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .info-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: #F4FBF6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #2E7D32;
+      flex-shrink: 0;
+    }
+    .info-item-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+    .info-item-desc {
+      font-size: 13.5px;
+      line-height: 1.45;
+      color: #6B7280;
+    }
+
+    /* Loading overlay */
+    .loader-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.94);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .spinner {
+      width: 46px;
+      height: 46px;
+      border: 4px solid #E5E7EB;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 14px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .loader-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hidden native file input for web fallback -->
+  <input type="file" id="fileInput" accept="image/*" style="display: none;">
+
+  <div class="screens-container">
+
+    <!-- SCREEN 1: Home -->
+    <section id="screen-home" class="screen active">
+      <header class="app-header">
+        <div class="logo-container">
+          <div class="logo-badge">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+          </div>
+          <span>GerMed</span>
+        </div>
+        <button class="nav-btn" onclick="openAbout()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </button>
+      </header>
+
+      <h1 class="hero-title">Understand your<br>skin better.</h1>
+      <p class="hero-subtitle">AI-assisted analysis of skin lesions. Upload a photo of a mole and get an estimated risk of skin cancer.</p>
+
+      <div class="upload-card" onclick="triggerPickImage()">
+        <div class="upload-icon-circle">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+            <circle cx="12" cy="13" r="3"/>
+          </svg>
+        </div>
+        <span class="upload-label">Take a photo or choose an image</span>
+      </div>
+
+      <button class="btn btn-primary" onclick="triggerPickImage()">Analyze a mole</button>
+      <button class="btn btn-secondary" onclick="triggerPickImage()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+          <circle cx="9" cy="9" r="2"/>
+          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+        </svg>
+        Choose from gallery
+      </button>
+
+      <!-- Real Previous analyses section (No dummy hardcoded entries) -->
+      <div class="history-section">
+        <div class="history-header">
+          <span class="history-title">Previous analyses</span>
+        </div>
+        <div id="historyList">
+          <div class="history-empty">No previous analyses yet. Take a photo to start.</div>
+        </div>
+      </div>
+
+      <div class="disclaimer-card">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 16v-4"/>
+          <path d="M12 8h.01"/>
+        </svg>
+        <span>This is not a medical diagnosis. Results are for informational purposes only. Consult a dermatologist for a professional evaluation.</span>
+      </div>
+    </section>
+
+    <!-- SCREEN 2: Result -->
+    <section id="screen-result" class="screen">
+      <header class="app-header">
+        <button class="nav-btn" onclick="goToHome()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m15 18-6-6 6-6"/>
+          </svg>
+        </button>
+        <div class="nav-title">Analysis result</div>
+        <button class="nav-btn" onclick="openAbout()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="1"/>
+            <circle cx="19" cy="12" r="1"/>
+            <circle cx="5" cy="12" r="1"/>
+          </svg>
+        </button>
+      </header>
+
+      <div class="result-image-box">
+        <img id="analyzedImage" src="" alt="Analyzed mole">
+      </div>
+
+      <div class="risk-header-row">
+        <span class="risk-label">Risk estimate</span>
+        <div id="riskBadge" class="risk-badge">
+          <span class="risk-dot"></span>
+          <span id="riskBadgeText">Low risk</span>
+        </div>
+      </div>
+
+      <div id="riskPercentage" class="risk-percentage">--%</div>
+
+      <div class="progress-bar-bg">
+        <div id="progressBarFill" class="progress-bar-fill"></div>
+      </div>
+
+      <p id="resultSummary" class="result-summary-text"></p>
+
+      <div class="thinking-card">
+        <div class="thinking-title">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a6 6 0 0 0-6 6c0 3 2 5 3 7h6c1-2 3-4 3-7a6 6 0 0 0-6-6z"/>
+            <path d="M9 18h6"/>
+            <path d="M10 22h4"/>
+          </svg>
+          Clinical Thinking Mode (ABCDE Protocol)
+        </div>
+        <div class="thinking-grid">
+          <div class="thinking-item">[A] Asymmetry: <span id="thinkAsym">--</span></div>
+          <div class="thinking-item">[B] Border: <span id="thinkBorder">--</span></div>
+          <div class="thinking-item">[C] Color Variegation: <span id="thinkColor">--</span></div>
+          <div class="thinking-item">[D] Pattern Network: <span id="thinkPattern">--</span></div>
+        </div>
+      </div>
+
+      <div class="section-title">What this means</div>
+      <p id="whatThisMeans" class="what-this-means-text"></p>
+
+      <div class="recommendation-box">
+        <div class="recommendation-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+            <line x1="16" x2="16" y1="2" y2="6"/>
+            <line x1="8" x2="8" y1="2" y2="6"/>
+            <line x1="3" x2="21" y1="10" y2="10"/>
+            <path d="m9 16 2 2 4-4"/>
+          </svg>
+        </div>
+        <div>
+          <div class="recommendation-title">Recommendation</div>
+          <div id="recommendationText" class="recommendation-desc"></div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="openAbout()" style="margin-top: 10px;">Find a specialist</button>
+    </section>
+
+    <!-- SCREEN 3: About -->
+    <section id="screen-about" class="screen">
+      <header class="app-header">
+        <button class="nav-btn" onclick="goBackFromAbout()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m15 18-6-6 6-6"/>
+          </svg>
+        </button>
+        <div class="nav-title">About this result</div>
+        <div style="width: 34px;"></div>
+      </header>
+
+      <div class="info-list">
+        <div class="info-item">
+          <div class="info-icon-box">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="info-item-title">Not a diagnosis</div>
+            <div class="info-item-desc">This is an AI risk estimate based on statistical modeling, not a certified medical diagnosis.</div>
+          </div>
+        </div>
+
+        <div class="info-item">
+          <div class="info-icon-box">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a6 6 0 0 0-6 6c0 3 2 5 3 7h6c1-2 3-4 3-7a6 6 0 0 0-6-6z"/>
+              <path d="M9 18h6"/>
+              <path d="M10 22h4"/>
+            </svg>
+          </div>
+          <div>
+            <div class="info-item-title">How it works</div>
+            <div class="info-item-desc">The GerMed-Mobile model analyzes visual features of the lesion, such as shape, border symmetry, color variegation, and texture, using clinical datasets.</div>
+          </div>
+        </div>
+
+        <div class="info-item">
+          <div class="info-icon-box">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <div>
+            <div class="info-item-title">Consult a specialist</div>
+            <div class="info-item-desc">Only a dermatologist can make a definitive diagnosis, e.g. through a dermatoscope examination or biopsy.</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="alert('Please consult your primary care doctor or local dermatology clinic.')">
+        Find a dermatologist
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+          <polyline points="15 3 21 3 21 9"/>
+          <line x1="10" x2="21" y1="14" y2="3"/>
+        </svg>
+      </button>
+    </section>
+
+  </div>
+
+  <div id="loaderOverlay" class="loader-overlay">
+    <div class="spinner"></div>
+    <div class="loader-text">Analyzing lesion on-device...</div>
+  </div>
+
+  <script>
+    let previousScreen = 'screen-home';
+    let history = [];
+
+    // Load persistent history from localStorage
+    try {
+      const saved = localStorage.getItem('germed_history');
+      if (saved) {
+        history = JSON.parse(saved);
+        renderHistory();
+      }
+    } catch(e) {}
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function goToHome() {
+      showScreen('screen-home');
+    }
+
+    function openAbout() {
+      const active = document.querySelector('.screen.active').id;
+      if (active !== 'screen-about') previousScreen = active;
+      showScreen('screen-about');
+    }
+
+    function goBackFromAbout() {
+      showScreen(previousScreen);
+    }
+
+    function triggerPickImage() {
+      if (window.AndroidInterface && window.AndroidInterface.pickImage) {
+        window.AndroidInterface.pickImage();
+      } else {
+        document.getElementById('fileInput').click();
+      }
+    }
+
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+      if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          const b64 = evt.target.result;
+          processImageAnalysis(b64);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Called directly by Android native bridge or browser
+    function onNativeImagePicked(base64Data) {
+      processImageAnalysis(base64Data);
+    }
+
+    async function processImageAnalysis(base64Image) {
+      document.getElementById('analyzedImage').src = base64Image;
+      const loader = document.getElementById('loaderOverlay');
+      loader.style.display = 'flex';
+
+      try {
+        let data;
+        if (window.AndroidInterface && window.AndroidInterface.analyzeMole) {
+          // 100% on-device native ONNX inference via Android bridge
+          const jsonStr = window.AndroidInterface.analyzeMole(base64Image);
+          data = JSON.parse(jsonStr);
+        } else {
+          // Web fallback endpoint
+          const res = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: base64Image })
+          });
+          if (!res.ok) throw new Error('Analysis failed');
+          data = await res.json();
+        }
+
+        renderResult(data, base64Image);
+        showScreen('screen-result');
+      } catch (err) {
+        alert('Error analyzing image: ' + err.message);
+      } finally {
+        loader.style.display = 'none';
+      }
+    }
+
+    function renderResult(data, base64Image) {
+      document.getElementById('riskPercentage').textContent = data.risk_percentage + '%';
+      
+      const badge = document.getElementById('riskBadge');
+      badge.style.color = data.risk_color;
+      badge.style.background = data.risk_color + '18';
+      document.getElementById('riskBadgeText').textContent = data.risk_level;
+
+      const fill = document.getElementById('progressBarFill');
+      fill.style.width = data.risk_percentage + '%';
+      fill.style.background = data.bar_color;
+
+      document.getElementById('resultSummary').textContent = data.summary;
+      document.getElementById('whatThisMeans').textContent = data.what_this_means;
+      document.getElementById('recommendationText').textContent = data.recommendation;
+
+      document.getElementById('thinkAsym').textContent = data.thinking_mode.asymmetry + '%';
+      document.getElementById('thinkBorder').textContent = data.thinking_mode.border + '%';
+      document.getElementById('thinkColor').textContent = data.thinking_mode.color + '%';
+      document.getElementById('thinkPattern').textContent = data.thinking_mode.pattern + '%';
+
+      // Save to real history
+      saveToHistory({
+        image: base64Image,
+        risk: data.risk_percentage,
+        date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+      });
+    }
+
+    function saveToHistory(entry) {
+      history.unshift(entry);
+      if (history.length > 10) history.pop();
+      try {
+        localStorage.setItem('germed_history', JSON.stringify(history));
+      } catch(e) {}
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const container = document.getElementById('historyList');
+      if (!history.length) {
+        container.innerHTML = '<div class="history-empty">No previous analyses yet. Take a photo to start.</div>';
+        return;
+      }
+      container.innerHTML = history.map((item, idx) => `
+        <div class="history-item" onclick="viewHistoryItem(${idx})">
+          <img class="history-thumb" src="${item.image}" alt="Scan thumb">
+          <div class="history-info">
+            <div class="history-name">Skin Lesion #${history.length - idx}</div>
+            <div class="history-risk">Risk: ${item.risk}%</div>
+          </div>
+          <div class="history-date">${item.date} &nbsp;&rsaquo;</div>
+        </div>
+      `).join('');
+    }
+
+    function viewHistoryItem(idx) {
+      const item = history[idx];
+      if (item) {
+        processImageAnalysis(item.image);
+      }
+    }
+  </script>
+</body>
+</html>

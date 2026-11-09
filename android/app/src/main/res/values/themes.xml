@@ -1,0 +1,9 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.GerMed" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">#19432B</item>
+        <item name="colorPrimaryVariant">#133320</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="android:statusBarColor">#FFFFFF</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+    </style>
+</resources>
