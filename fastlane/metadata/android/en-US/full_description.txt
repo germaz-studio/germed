@@ -1,0 +1,9 @@
+GerMed is an open-source, on-device dermatological screening aid designed to assist in evaluating skin lesions (Melanoma, Basal Cell Carcinoma vs. Benign Nevi).
+
+Features:
+* 100% On-Device & Offline: No internet connection, server communication, or user tracking. Patient photos never leave your device.
+* Real-Time Inference: Runs locally using optimized ONNX Runtime and MobileNetV4.
+* Clinical ABCDE Protocol: Structured breakdown of lesion geometry including Asymmetry, Border irregularity, Color variegation, and Pattern atypia.
+* Assistive Screening: Designed to help prioritize clinical consultations.
+
+Note: GerMed is intended strictly as an assistive triage aid and educational tool. It is NOT a certified medical diagnostic device. Any suspicious skin lesion must always be evaluated in person by a qualified medical professional.
