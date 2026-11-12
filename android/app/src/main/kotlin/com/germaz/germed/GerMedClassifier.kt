@@ -6,22 +6,53 @@ import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import org.json.JSONObject
+import java.io.File
+import java.io.FileOutputStream
 import java.nio.FloatBuffer
 import kotlin.math.roundToInt
 
-class GerMedClassifier(context: Context) {
-    private val env: OrtEnvironment = OrtEnvironment.getEnvironment()
-    private val session: OrtSession
+class GerMedClassifier(private val context: Context) {
+    private var env: OrtEnvironment? = null
+    private var session: OrtSession? = null
+    private var isInitialized = false
 
-    init {
-        val modelBytes = context.assets.open("germed_mobile_v4_int8.onnx").use { it.readBytes() }
-        session = env.createSession(modelBytes, OrtSession.SessionOptions())
+    @Synchronized
+    private fun ensureSession(): OrtSession {
+        if (session != null && isInitialized) {
+            return session!!
+        }
+
+        val ortEnv = OrtEnvironment.getEnvironment()
+        env = ortEnv
+
+        // Copy model from assets to internal storage cache to avoid loading 8MB into memory repeatedly
+        val modelFile = File(context.filesDir, "germed_mobile_v4_int8.onnx")
+        if (!modelFile.exists() || modelFile.length() == 0L) {
+            context.assets.open("germed_mobile_v4_int8.onnx").use { input ->
+                FileOutputStream(modelFile).use { output ->
+                    input.copyTo(output)
+                }
+            }
+        }
+
+        val sessionOptions = OrtSession.SessionOptions().apply {
+            setIntraOpNumThreads(2)
+            setOptimizationLevel(OrtSession.SessionOptions.OptLevel.BASIC_OPT)
+        }
+
+        session = ortEnv.createSession(modelFile.absolutePath, sessionOptions)
+        isInitialized = true
+        return session!!
     }
 
+    @Synchronized
     fun analyze(bitmap: Bitmap): String {
+        val ortSession = ensureSession()
+        val ortEnv = env ?: OrtEnvironment.getEnvironment()
+
         val scaled = Bitmap.createScaledBitmap(bitmap, 256, 256, true)
         val floatBuffer = FloatBuffer.allocate(1 * 3 * 256 * 256)
-        
+
         val meanR = 0.485f
         val meanG = 0.456f
         val meanB = 0.406f
@@ -31,6 +62,9 @@ class GerMedClassifier(context: Context) {
 
         val pixels = IntArray(256 * 256)
         scaled.getPixels(pixels, 0, 256, 0, 0, 256, 256)
+        if (scaled != bitmap) {
+            scaled.recycle()
+        }
 
         // CHW order
         // Red channel
@@ -50,21 +84,32 @@ class GerMedClassifier(context: Context) {
         }
         floatBuffer.flip()
 
-        val tensor = OnnxTensor.createTensor(env, floatBuffer, longArrayOf(1, 3, 256, 256))
-        val results = session.run(mapOf("input_image" to tensor))
+        val tensor = OnnxTensor.createTensor(ortEnv, floatBuffer, longArrayOf(1, 3, 256, 256))
+        val results = ortSession.run(mapOf("input_image" to tensor))
 
-        // Extract outputs: [malignancy_risk, asymmetry, border, color, pattern]
-        val riskArr = results.get(0).value as Array<FloatArray>
-        val asymArr = results.get(1).value as Array<FloatArray>
-        val borderArr = results.get(2).value as Array<FloatArray>
-        val colorArr = results.get(3).value as Array<FloatArray>
-        val patternArr = results.get(4).value as Array<FloatArray>
+        // Extract outputs safely
+        fun extractFloat(obj: Any?): Float {
+            return when (obj) {
+                is Array<*> -> {
+                    val first = obj.firstOrNull()
+                    when (first) {
+                        is FloatArray -> first.getOrElse(0) { 0f }
+                        is Array<*> -> (first.firstOrNull() as? Number)?.toFloat() ?: 0f
+                        is Number -> first.toFloat()
+                        else -> 0f
+                    }
+                }
+                is FloatArray -> obj.getOrElse(0) { 0f }
+                is Number -> obj.toFloat()
+                else -> 0f
+            }
+        }
 
-        val risk = riskArr[0][0]
-        val asym = asymArr[0][0]
-        val border = borderArr[0][0]
-        val color = colorArr[0][0]
-        val pattern = patternArr[0][0]
+        val risk = extractFloat(results.get(0)?.value)
+        val asym = extractFloat(results.get(1)?.value)
+        val border = extractFloat(results.get(2)?.value)
+        val color = extractFloat(results.get(3)?.value)
+        val pattern = extractFloat(results.get(4)?.value)
 
         val riskPct = (risk * 100).roundToInt().coerceIn(1, 99)
 

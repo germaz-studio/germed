@@ -7,7 +7,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
 import android.util.Base64
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
@@ -19,12 +18,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
 import java.io.ByteArrayOutputStream
-import java.io.InputStream
+import kotlin.math.max
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
-    private lateinit var classifier: GerMedClassifier
+    private val classifier by lazy { GerMedClassifier(applicationContext) }
 
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -40,9 +39,6 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Initialize classifier
-        classifier = GerMedClassifier(this)
 
         webView = WebView(this)
         setContentView(webView)
@@ -73,24 +69,48 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleSelectedImageUri(uri: Uri) {
-        try {
-            val inputStream: InputStream? = contentResolver.openInputStream(uri)
-            val bitmap = BitmapFactory.decodeStream(inputStream)
-            inputStream?.close()
-
-            if (bitmap != null) {
-                val outputStream = ByteArrayOutputStream()
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
-                val base64 = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
-                val fullBase64 = "data:image/jpeg;base64,$base64"
-
-                runOnUiThread {
-                    webView.evaluateJavascript("onNativeImagePicked('$fullBase64')", null)
+        Thread {
+            try {
+                // Decode bounds first to prevent OutOfMemory on high-resolution camera photos
+                val options = BitmapFactory.Options().apply {
+                    inJustDecodeBounds = true
                 }
+                contentResolver.openInputStream(uri)?.use { stream ->
+                    BitmapFactory.decodeStream(stream, null, options)
+                }
+
+                val maxDimension = 1024
+                var sampleSize = 1
+                val maxActual = max(options.outWidth, options.outHeight)
+                while (maxActual / sampleSize > maxDimension * 2) {
+                    sampleSize *= 2
+                }
+
+                val decodeOptions = BitmapFactory.Options().apply {
+                    inSampleSize = sampleSize
+                    inPreferredConfig = Bitmap.Config.RGB_565 // Low RAM footprint
+                }
+
+                val bitmap = contentResolver.openInputStream(uri)?.use { stream ->
+                    BitmapFactory.decodeStream(stream, null, decodeOptions)
+                }
+
+                if (bitmap != null) {
+                    val outputStream = ByteArrayOutputStream()
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+                    bitmap.recycle()
+
+                    val base64 = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
+                    val fullBase64 = "data:image/jpeg;base64,$base64"
+
+                    runOnUiThread {
+                        webView.evaluateJavascript("onNativeImagePicked('$fullBase64')", null)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        }.start()
     }
 
     inner class WebAppInterface {
@@ -111,10 +131,16 @@ class MainActivity : AppCompatActivity() {
                     base64Data
                 }
                 val bytes = Base64.decode(cleanBase64, Base64.DEFAULT)
-                val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                classifier.analyze(bitmap)
+                val decodeOptions = BitmapFactory.Options().apply {
+                    inPreferredConfig = Bitmap.Config.RGB_565
+                }
+                val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions)
+                val result = classifier.analyze(bitmap)
+                bitmap.recycle()
+                result
             } catch (e: Exception) {
-                """{"error": "${e.message}"}"""
+                val errMsg = e.message ?: "Analysis failed"
+                "{\"error\": \"" + errMsg.replace("\"", "\\\"") + "\"}"
             }
         }
     }
